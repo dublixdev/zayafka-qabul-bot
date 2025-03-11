@@ -16,10 +16,9 @@ class MainHandler
     public function start(Nutgram $bot): void
     {
         $userId = $bot->userId();
-        if(Cache::has('saqla'))
-        {
+        
+        if (Cache::has('saqla')) {
             $data = Cache::get('saqla');
-
             try {
                 $bot->copyMessage(
                     $userId,
@@ -27,221 +26,187 @@ class MainHandler
                     $data['message_id'],
                     reply_markup: $data['reply_markup'] ?? null,
                 );
-            } catch (\Exception $e)
-            {
+            } catch (\Exception $e) {
                 return;
             }
-
         } else {
-            $bot->sendMessage('Привет! '. $bot->user()->first_name);
+            $bot->sendMessage('👋 Assalomu alaykum! ' . $bot->user()->first_name . '! Botimizga xush kelibsiz! 🌟');
         }
 
-        try {  User::create(['user_id' => $userId]); } catch (\Exception $e) {}
+        try {
+            User::firstOrCreate(['user_id' => $userId]);
+        } catch (\Exception $e) {}
+    }
 
-}
-
-public function admin(Nutgram $bot)
-{
-$bot->sendMessage(
-text: "Admin panelga hush kelibsiz bratim!
-
-/send - Azolarga habar yuborish
-/chat_join - Zayafkalarni qabul qilish!
-/saqla - Reklamani saqlash
-/stat - Azolar soni
-
-⚠️ Barcha tizimlar Job orqali ishlaydi",
+    public function admin(Nutgram $bot)
+    {
+        $bot->sendMessage(
+            text: "<b>🛠️ Administrator Paneliga Xush Kelibsiz!</b>\n\n"
+                ."Quyidagi buyruqlar bilan ishlashingiz mumkin:\n\n"
+                ."📩 /send - Barcha a'zolarga xabar yuborish\n"
+                ."👥 /chat_join - Kanal so'rovlarini boshqarish\n"
+                ."💾 /saqla - Reklama postini saqlash\n"
+                ."📊 /stat - Bot statistikasi\n\n"
+                ."⚠️ <i>Barcha operatsiyalar navbat tizimi orqali amalga oshiriladi</i>",
             parse_mode: ParseMode::HTML,
-);
-}
-
-public function stat(Nutgram $bot)
-{
-    $count = User::count();
-    $bot->sendMessage(
-        text: "Azolar soni: $count",
-    );
-}
-
-public function saqla(Nutgram $bot)
-{
-
-    $message = $bot->message();
-
-    if(!$message->reply_to_message)
-    {
-        $bot->sendMessage(
-            text: "Biron bir habarni reply qilishingiz kerak!!!",
         );
-        return;
     }
 
-    $replyMessage = $message->reply_to_message;
-    $message_id = $replyMessage->message_id;
-    $reply_markup = $replyMessage->reply_markup;
-
-    $data = [];
-    $data['from_chat_id'] = $bot->userId();
-    $data['message_id'] = $message_id;
-    $data['reply_markup'] = $reply_markup ? json_encode($reply_markup->toArray()) : false;
-
-    Cache::forever('saqla', $data);
-
-    $this->start($bot);
-
-    $bot->sendMessage(
-        text: "Reklama saqlandi!
-
-/remove - reklamani o'chirish",
-    );
-
-}
-
-public function remove(Nutgram $bot)
-{
-
-    $bot->sendMessage(
-        text: "Reklama o'chirildi!",
-    );
-
-    Cache::forget('saqla');
-}
-
-public function send(Nutgram $bot)
-{
-    $message = $bot->message();
-
-    if(!$message->reply_to_message)
+    public function stat(Nutgram $bot)
     {
+        $count = User::count();
         $bot->sendMessage(
-            text: "Biron bir habarni reply qilishingiz kerak!!!",
+            text: "📊 Bot a'zolari soni: " . number_format($count),
         );
-        return;
     }
 
-    $replyMessage = $message->reply_to_message;
-    $message_id = $replyMessage->message_id;
-    $reply_markup = $replyMessage->reply_markup;
-
-    $data = [];
-    $data['from_chat_id'] = $bot->userId();
-    $data['message_id'] = $message_id;
-    $data['reply_markup'] = $reply_markup ? json_encode($reply_markup->toArray()) : false;
-
-Cache::forever('send_message', 0);
-
-$batchSize = 15;
-$delaySeconds = 0;
-
-User::query()->chunk($batchSize, function ($batch) use (&$delaySeconds, $data)
-{
-    SendMessageJob::dispatch($batch, $data)
-        ->delay(now()->addSeconds($delaySeconds));
-
-    $delaySeconds += 1;
-});
-
-$bot->sendMessage(
-    text: "✅ Habar yuborish boshlandi!
-
-/stat_send - Habar yuborish statitikasi",
-);
-
-}
-
-public function chat_join(Nutgram $bot)
-{
-$n = ChatJoinRequest::count();
-$bot->sendMessage("<b>📌 Zayafka qabul qilish tartibi:</>
-
-✅ Hozirda ".number_format($n)." ta zayafka mavjud. Agar siz zayafka qabul qilishni boshlasangiz, hozir mavjud barcha zayafkalar avtomatik qabul qilinadi.
-<i>⚠️ Qabul qilish boshlanganidan keyin tushadigan yangi zayafkalar bu jarayonga kirmaydi.</>
-
-/boshlash - zayafkalarni qabul qilishni boshlash
-
-💡 Yoki siz faqat belgilangan kanalni zayafkalarini qabul qilishingiz ham mumkin
-/boshlash_kanal kanal_id_raqami - Faqat belgilangan kanalni zayafkalarini qabul qiladi
-
-<b>Masalan:</b> /boshlash_kanal -10012345678
-
-",
-    parse_mode: ParseMode::HTML,
-);
-
-}
-
-public function boshlash_kanal(Nutgram $bot, int $chat_id)
-{
-    $chat = ChatJoinRequest::where('chat_id', trim($chat_id));
-
-    if($chat->exists())
+    public function saqla(Nutgram $bot)
     {
+        $message = $bot->message();
+
+        if (!$message->reply_to_message) {
+            $bot->sendMessage(
+                text: "⚠️ Iltimos, saqlash uchun xabarga reply qiling!",
+            );
+            return;
+        }
+
+        $replyMessage = $message->reply_to_message;
+        $data = [
+            'from_chat_id' => $bot->userId(),
+            'message_id' => $replyMessage->message_id,
+            'reply_markup' => $replyMessage->reply_markup?->toArray(),
+        ];
+
+        Cache::forever('saqla', $data);
+
+        $this->start($bot);
+
         $bot->sendMessage(
-            text: "❌ Bundan kanaldan zayafka qabul qilmaganman",
+            text: "✅ Reklama muvaffaqiyatli saqlandi!\n"
+                ."🗑️ /remove - Saqlangan reklamani o'chirish",
         );
-        return;
     }
 
-    $batchSize = 20;
-    $delaySeconds = 0;
-
-    ChatJoinRequest::where('chat_id', $chat_id)->chunk($batchSize, function ($batch) use (&$delaySeconds)
+    public function remove(Nutgram $bot)
     {
-        ChatJoinRequestJob::dispatch($batch)
-            ->delay(now()->addSeconds($delaySeconds));
+        Cache::forget('saqla');
+        $bot->sendMessage(
+            text: "✅ Reklama muvaffaqiyatli o'chirildi!",
+        );
+    }
 
-        $delaySeconds += 1;
-    });
+    public function send(Nutgram $bot)
+    {
+        $message = $bot->message();
 
-$bot->sendMessage(
-        text: "✅ Zayafka qabul qilish boshlandi bu kanalda {number_format($chat->count())} ta zayafka bor ekan.
+        if (!$message->reply_to_message) {
+            $bot->sendMessage(
+                text: "⚠️ Xabar yuborish uchun habarga reply qiling!",
+            );
+            return;
+        }
 
-/stat_zayafka - Habar yuborish statitikasi",
-);
+        $replyMessage = $message->reply_to_message;
+        $data = [
+            'from_chat_id' => $bot->userId(),
+            'message_id' => $replyMessage->message_id,
+            'reply_markup' => $replyMessage->reply_markup?->toArray(),
+        ];
 
+        Cache::forever('send_message', 0);
 
-}
+        $batchSize = 15;
+        $delaySeconds = 0;
 
-public function boshlash(Nutgram $bot)
-{
-$batchSize = 20;
-$delaySeconds = 0;
+        User::query()->chunk($batchSize, function ($batch) use (&$delaySeconds, $data) {
+            SendMessageJob::dispatch($batch, $data)
+                ->delay(now()->addSeconds($delaySeconds));
+            $delaySeconds += 1;
+        });
 
-ChatJoinRequest::query()->chunk($batchSize, function ($batch) use (&$delaySeconds)
-{
-    ChatJoinRequestJob::dispatch($batch)
-        ->delay(now()->addSeconds($delaySeconds));
+        $bot->sendMessage(
+            text: "🚀 Xabar yuborish jarayoni boshlandi!\n"
+                ."📈 /stat_send - Xabar yuborish statistikasi",
+        );
+    }
 
-    $delaySeconds += 1;
-});
+    public function chat_join(Nutgram $bot)
+    {
+        $count = ChatJoinRequest::count();
+        $bot->sendMessage(
+            text: "<b>📥 Kanal So'rovlari Boshqaruvi</b>\n\n"
+                ."🔹 Joriy navbatdagi so'rovlar: " . number_format($count) . " ta\n"
+                ."🔹 Quyidagi buyruqlar bilan ishlashingiz mumkin:\n\n"
+                ."✅ /boshlash - Barcha so'rovlarni tasdiqlash\n"
+                ."🎯 /boshlash_kanal [Kanal ID] - Maxsus kanal so'rovlari\n\n"
+                ."<i>ℹ️ Misol: <code>/boshlash_kanal -1001234567890</code></i>\n\n"
+                ."⚠️ <i>Jarayon boshlangandan keyin keladigan so'rovlar avtomatik qo'shilmaydi</i>",
+            parse_mode: ParseMode::HTML,
+        );
+    }
 
-$bot->sendMessage(
-    text: "✅ Zayafka qabul qilish boshlandi
+    public function boshlash_kanal(Nutgram $bot, int $chat_id)
+    {
+        $requests = ChatJoinRequest::where('chat_id', $chat_id);
 
-/stat_zayafka - Habar yuborish statitikasi",
-);
+        if (!$requests->exists()) {
+            $bot->sendMessage(
+                text: "❌ Ushbu kanalda so'rovlar topilmadi!",
+            );
+            return;
+        }
 
-}
+        $batchSize = 20;
+        $delaySeconds = 0;
 
-public function stat_send(Nutgram $bot)
-{
-    $bot->sendMessage(
-        text: "Habar yuborishlar soni: ". number_format(Cache::get('send_message', 0)),
-    );
-}
+        $requests->chunk($batchSize, function ($batch) use (&$delaySeconds) {
+            ChatJoinRequestJob::dispatch($batch)
+                ->delay(now()->addSeconds($delaySeconds));
+            $delaySeconds += 1;
+        });
 
-public function stat_zayafka(Nutgram $bot)
-{
-    $n = ChatJoinRequest::count();
-    $bot->sendMessage(
-        text: "Qolgan zayafkalar soni: ".number_format($n),
-    );
-}
+        $bot->sendMessage(
+            text: "✅ Kanal so'rovlari qabul qilish boshlandi!\n"
+                ."📊 /stat_zayafka - Jarayon statistikasi",
+        );
+    }
 
-public function webhook(Nutgram $bot)
-{
-    $bot->run();
-}
+    public function boshlash(Nutgram $bot)
+    {
+        $batchSize = 20;
+        $delaySeconds = 0;
 
+        ChatJoinRequest::query()->chunk($batchSize, function ($batch) use (&$delaySeconds) {
+            ChatJoinRequestJob::dispatch($batch)
+                ->delay(now()->addSeconds($delaySeconds));
+            $delaySeconds += 1;
+        });
 
+        $bot->sendMessage(
+            text: "✅ Barcha so'rovlarni qabul qilish jarayoni boshlandi!\n"
+                ."📊 /stat_zayafka - Statistikani ko'rish",
+        );
+    }
+
+    public function stat_send(Nutgram $bot)
+    {
+        $count = Cache::get('send_message', 0);
+        $bot->sendMessage(
+            text: "📨 Yuborilgan xabarlar soni: " . number_format($count),
+        );
+    }
+
+    public function stat_zayafka(Nutgram $bot)
+    {
+        $count = ChatJoinRequest::count();
+        $bot->sendMessage(
+            text: "📥 Qolgan so'rovlar soni: " . number_format($count),
+        );
+    }
+
+    public function webhook(Nutgram $bot)
+    {
+        $bot->run();
+    }
 }
