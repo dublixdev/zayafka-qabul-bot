@@ -1,4 +1,4 @@
-```markdown
+
 # Telegram Bot 🤖
 
 PHP, Nutgram va Laravel yordamida yaratilgan kuchli Telegram bot. Foydalanuvchilar bilan muloqot, xabarlarni tarqatish va kanalga qo'shilish so'rovlarini boshqarish imkoniyatlari.
@@ -16,8 +16,8 @@ PHP, Nutgram va Laravel yordamida yaratilgan kuchli Telegram bot. Foydalanuvchil
 
 1. **Repozitoriyani klonlash**
    ```bash
-   git clone https://github.com/foydalanuvchi/telegram-bot.git
-   cd telegram-bot
+   git clone https://github.com/dublixdev/zayafka-qabul-bot.git
+   cd zayafka-qabul-bot
    ```
 
 2. **Qaramliklarni o'rnatish**
